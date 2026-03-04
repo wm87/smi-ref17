@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wm87@smi:~$ ./bewerbung.sh</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&family=Syne:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --green: #00ff88;
+            --green-dim: #00cc66;
+            --amber: #ffb800;
+            --red: #ff4466;
+            --blue: #44aaff;
+            --bg: #080d0a;
+            --bg2: #0d1410;
+            --border: #1a2e20;
+            --text: #c8ddc0;
+            --text-dim: #4a6650;
+            --glow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        ::selection {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--green)
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.7;
+            overflow-x: hidden;
+            cursor: crosshair;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.07) 2px, rgba(0, 0, 0, 0.07) 4px);
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* BOOT */
+        #boot {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 3rem;
+            transition: opacity 0.8s ease;
+        }
+
+        #boot.fade-out {
+            opacity: 0;
+            pointer-events: none
+        }
+
+        #boot-log {
+            color: #00cc66;
+            font-size: 12px;
+            line-height: 1.6;
+            max-width: 700px
+        }
+
+        #boot-log .ok {
+            color: #00ff88
+        }
+
+        #boot-log .err {
+            color: #ff4466
+        }
+
+        #boot-log .dim {
+            color: #336640
+        }
+
+        #boot-cursor {
+            display: inline-block;
+            width: 9px;
+            height: 15px;
+            background: #00ff88;
+            animation: blink 1s infinite;
+            vertical-align: text-bottom;
+            margin-left: 2px
+        }
+
+        /* TOPBAR */
+        .topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(8, 13, 10, 0.96);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .topbar.show {
+            opacity: 1
+        }
+
+        .tb-left {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            font-size: 13px;
+            color: var(--green);
+            font-weight: 700
+        }
+
+        .tb-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%
+        }
+
+        .d-r {
+            background: #ff5f57
+        }
+
+        .d-y {
+            background: #febc2e
+        }
+
+        .d-g {
+            background: #28c840
+        }
+
+        .tb-title {
+            color: var(--text);
+            font-weight: 400;
+            margin-left: .5rem
+        }
+
+        .tb-title span {
+            color: var(--green)
+        }
+
+        .tb-nav {
+            display: flex;
+            gap: .2rem
+        }
+
+        .tb-nav a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 12px;
+            padding: .3rem .7rem;
+            border: 1px solid transparent;
+            transition: all .2s;
+            letter-spacing: .05em
+        }
+
+        .tb-nav a:hover {
+            color: var(--green);
+            border-color: var(--border);
+            background: rgba(0, 255, 136, .05)
+        }
+
+        .tb-nav a::before {
+            content: './';
+            color: var(--text-dim)
+        }
+
+        #live-clock {
+            font-size: 11px;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: .8rem
+        }
+
+        .cv {
+            color: var(--green-dim)
+        }
+
+        /* DOT NAV — labels only on hover, never on active */
+        .dot-nav {
+            position: fixed;
+            right: 1.4rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 800;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .dn-item {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            cursor: pointer;
+            padding: 5px 0;
+        }
+
+        .dn-label {
+            position: absolute;
+            right: 22px;
+            background: rgba(0, 0, 0, 0.92);
+            border: 1px solid var(--border);
+            color: var(--green);
+            font-size: 10px;
+            letter-spacing: .1em;
+            padding: 3px 10px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(8px);
+            transition: opacity .18s, transform .18s;
+        }
+
+        /* Label ONLY on hover — removed active-state label display */
+        .dn-item:hover .dn-label {
+            opacity: 1;
+            transform: translateX(0)
+        }
+
+        .dn-dot {
+            width: 8px;
+            height: 8px;
+            border: 1px solid rgba(0, 255, 136, .35);
+            background: transparent;
+            transition: all .25s;
+            flex-shrink: 0;
+        }
+
+        .dn-item:hover .dn-dot {
+            background: rgba(0, 255, 136, .35);
+            border-color: var(--green);
+            box-shadow: 0 0 8px rgba(0, 255, 136, .5)
+        }
+
+        .dn-item.active .dn-dot {
+            background: var(--green);
+            border-color: var(--green);
+            box-shadow: 0 0 14px rgba(0, 255, 136, .8);
+            width: 11px;
+            height: 11px
+        }
+
+        .dn-connector {
+            width: 1px;
+            height: 16px;
+            background: var(--border)
+        }
+
+        /* HERO */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 6rem 3rem 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(rgba(0, 255, 136, .03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 136, .03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            top: 20%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(ellipse, rgba(0, 255, 136, .06) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        /* SECTION TRANSITION — bottom fade on hero */
+        .hero-fade {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            background: linear-gradient(to bottom, transparent, var(--bg2));
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .hero-inner {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px
+        }
+
+        .hero-prompt {
+            color: var(--text-dim);
+            font-size: 13px;
+            margin-bottom: .5rem;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            flex-wrap: wrap
+        }
+
+        .ps1 {
+            color: var(--green)
+        }
+
+        .cmd {
+            color: var(--amber)
+        }
+
+        .hero-title {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.05;
+            letter-spacing: -.02em;
+            margin-bottom: .5rem;
+        }
+
+        .hl {
+            color: var(--green);
+            text-shadow: var(--glow)
+        }
+
+        .hero-subtitle {
+            font-size: clamp(.9rem, 2vw, 1.1rem);
+            color: var(--text-dim);
+            margin-bottom: 2.5rem;
+            border-left: 2px solid var(--border);
+            padding-left: 1rem;
+        }
+
+        .tag {
+            display: inline-block;
+            background: rgba(0, 255, 136, .08);
+            border: 1px solid rgba(0, 255, 136, .2);
+            color: var(--green-dim);
+            font-size: 11px;
+            padding: 2px 8px;
+            margin: 2px 4px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-bottom: 3rem
+        }
+
+        .stat-box {
+            border: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            background: rgba(0, 255, 136, .02);
+            position: relative;
+            min-width: 140px;
+        }
+
+        .stat-box::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 0;
+            width: 40%;
+            height: 1px;
+            background: var(--green)
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--green);
+            line-height: 1
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            margin-top: .3rem
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .8rem 1.8rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            letter-spacing: .05em;
+            transition: all .2s;
+        }
+
+        .btn::before {
+            content: '$ ';
+            opacity: .5
+        }
+
+        .btn-primary {
+            background: var(--green);
+            color: #000 !important;
+        }
+
+        .btn-primary:hover {
+            background: #fff;
+            color: #000 !important;
+            box-shadow: 0 0 30px rgba(0, 255, 136, .4);
+            transform: translateY(-1px)
+        }
+
+        .btn-primary::before {
+            color: #000;
+            opacity: .6;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--green) !important;
+            border: 1px solid rgba(0, 255, 136, .3)
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 255, 136, .08);
+            border-color: var(--green);
+            box-shadow: var(--glow)
+        }
+
+        /* Override any parent link color bleeding into buttons */
+        a.btn-primary,
+        a.btn-primary:visited,
+        a.btn-primary:link {
+            color: #000 !important;
+        }
+
+        a.btn-secondary,
+        a.btn-secondary:visited,
+        a.btn-secondary:link {
+            color: var(--green) !important;
+        }
+
+        .scroll-hint {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--text-dim);
+            font-size: 11px;
+            text-align: center;
+            animation: floatUp 2s infinite;
+            letter-spacing: .1em;
+            z-index: 3;
+        }
+
+        /* SECTIONS */
+        .section {
+            padding: 4rem 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section-alt {
+            background: var(--bg2)
+        }
+
+        /* ═══════════════════════════════════════════════
+           TECH BACKGROUND PATTERNS — epic but subtle
+           ═══════════════════════════════════════════════ */
+
+        /* Motherboard / PCB circuit traces — section-alt */
+        #profil {
+            background-color: var(--bg2);
+            background-image:
+                radial-gradient(ellipse 600px 400px at 5% 30%, rgba(0, 255, 136, .045) 0%, transparent 100%),
+                radial-gradient(ellipse 400px 300px at 95% 75%, rgba(0, 150, 80, .03) 0%, transparent 100%),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='180'%3E%3Cg stroke='%2300ff88' stroke-width='1' fill='none' opacity='0.07'%3E%3Cpath d='M0 30 H50 V10 H110 V30 H160 V10 H200'/%3E%3Cpath d='M0 90 H30 V70 H80 V110 H130 V70 H170 V90 H240'/%3E%3Cpath d='M0 150 H40 V130 H90 V150 H140 V130 H190 V150 H240'/%3E%3Cpath d='M50 30 V90'/%3E%3Cpath d='M110 10 V70'/%3E%3Cpath d='M160 10 V70'/%3E%3Cpath d='M80 110 V150'/%3E%3Cpath d='M140 150 V110'/%3E%3C/g%3E%3Cg fill='%2300ff88' opacity='0.12'%3E%3Ccircle cx='50' cy='30' r='2.5'/%3E%3Ccircle cx='110' cy='10' r='2.5'/%3E%3Ccircle cx='110' cy='30' r='2.5'/%3E%3Ccircle cx='160' cy='10' r='2.5'/%3E%3Ccircle cx='160' cy='30' r='2.5'/%3E%3Ccircle cx='30' cy='90' r='2.5'/%3E%3Ccircle cx='80' cy='70' r='2.5'/%3E%3Ccircle cx='80' cy='110' r='2.5'/%3E%3Ccircle cx='130' cy='70' r='2.5'/%3E%3Ccircle cx='130' cy='110' r='2.5'/%3E%3Ccircle cx='170' cy='90' r='2.5'/%3E%3Ccircle cx='40' cy='150' r='2.5'/%3E%3Ccircle cx='90' cy='130' r='2.5'/%3E%3Ccircle cx='90' cy='150' r='2.5'/%3E%3Ccircle cx='140' cy='130' r='2.5'/%3E%3Ccircle cx='140' cy='150' r='2.5'/%3E%3Ccircle cx='190' cy='150' r='2.5'/%3E%3C/g%3E%3C/svg%3E");
+            background-size: 100% 100%, 100% 100%, 240px 180px;
+        }
+
+        /* Hex/binary pattern — match section */
+        #match {
+            background-color: var(--bg);
+            background-image:
+                radial-gradient(ellipse 500px 500px at 90% 10%, rgba(68, 170, 255, .025) 0%, transparent 100%),
+                radial-gradient(ellipse 400px 300px at 10% 90%, rgba(0, 255, 136, .03) 0%, transparent 100%),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%2300ff88' opacity='0.055' font-family='monospace' font-size='9'%3E%3Ctext x='5' y='14'%3E01101%3C/text%3E%3Ctext x='5' y='34'%3E0xFF%3C/text%3E%3Ctext x='5' y='54'%3E10110%3C/text%3E%3Ctext x='5' y='74'%3E0x4A%3C/text%3E%3Ctext x='5' y='94'%3E11001%3C/text%3E%3Ctext x='5' y='114'%3E0x1B%3C/text%3E%3C/g%3E%3C/svg%3E");
+            background-size: 100% 100%, 100% 100%, 120px 120px;
+        }
+
+        /* Server rack / horizontal lines — skills section-alt */
+        #skills {
+            background-color: var(--bg2);
+            background-image:
+                radial-gradient(ellipse 700px 400px at 50% 50%, rgba(0, 255, 136, .03) 0%, transparent 100%),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='60'%3E%3Cg stroke='%2300ff88' opacity='0.05' fill='none'%3E%3Crect x='10' y='8' width='380' height='18' rx='2' stroke-width='1'/%3E%3Crect x='10' y='34' width='380' height='18' rx='2' stroke-width='1'/%3E%3Crect x='10' y='8' width='20' height='18' fill='%2300ff88' opacity='0.04'/%3E%3Crect x='10' y='34' width='20' height='18' fill='%2300ff88' opacity='0.04'/%3E%3Ccircle cx='355' cy='17' r='4' stroke-width='1'/%3E%3Ccircle cx='370' cy='17' r='4' stroke-width='1'/%3E%3Ccircle cx='385' cy='17' r='4' stroke-width='1' fill='%2300ff88' opacity='0.08'/%3E%3Ccircle cx='355' cy='43' r='4' stroke-width='1'/%3E%3Ccircle cx='370' cy='43' r='4' stroke-width='1' fill='%2300ff88' opacity='0.08'/%3E%3Ccircle cx='385' cy='43' r='4' stroke-width='1'/%3E%3Cline x1='40' y1='8' x2='40' y2='26' stroke-width='1'/%3E%3Cline x1='60' y1='8' x2='60' y2='26' stroke-width='1'/%3E%3Cline x1='40' y1='34' x2='40' y2='52' stroke-width='1'/%3E%3Cline x1='60' y1='34' x2='60' y2='52' stroke-width='1'/%3E%3C/g%3E%3C/svg%3E");
+            background-size: 100% 100%, 400px 60px;
+        }
+
+        /* Node cluster / network — motivation section */
+        #motivation {
+            background-color: var(--bg);
+            background-image:
+                radial-gradient(ellipse 500px 400px at 15% 60%, rgba(0, 255, 136, .035) 0%, transparent 100%),
+                radial-gradient(ellipse 400px 300px at 85% 20%, rgba(255, 184, 0, .02) 0%, transparent 100%),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Cg stroke='%2300ff88' opacity='0.07' fill='none' stroke-width='1'%3E%3Cline x1='30' y1='40' x2='100' y2='80'/%3E%3Cline x1='100' y1='80' x2='180' y2='50'/%3E%3Cline x1='180' y1='50' x2='250' y2='100'/%3E%3Cline x1='100' y1='80' x2='130' y2='160'/%3E%3Cline x1='180' y1='50' x2='130' y2='160'/%3E%3Cline x1='250' y1='100' x2='270' y2='170'/%3E%3Cline x1='30' y1='40' x2='60' y2='140'/%3E%3Cline x1='60' y1='140' x2='130' y2='160'/%3E%3C/g%3E%3Cg fill='%2300ff88' opacity='0.13'%3E%3Ccircle cx='30' cy='40' r='4'/%3E%3Ccircle cx='100' cy='80' r='5'/%3E%3Ccircle cx='180' cy='50' r='4'/%3E%3Ccircle cx='250' cy='100' r='4'/%3E%3Ccircle cx='130' cy='160' r='5'/%3E%3Ccircle cx='60' cy='140' r='3'/%3E%3Ccircle cx='270' cy='170' r='3'/%3E%3C/g%3E%3C/svg%3E");
+            background-size: 100% 100%, 100% 100%, 300px 200px;
+        }
+
+        /* Code lines — infrastruktur section-alt */
+        #infrastruktur {
+            background-color: var(--bg2);
+            background-image:
+                radial-gradient(ellipse 600px 500px at 80% 50%, rgba(0, 255, 136, .03) 0%, transparent 100%),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='28'%3E%3Cg fill='%2300ff88' opacity='0.055' font-family='monospace' font-size='10'%3E%3Crect x='0' y='8' width='40' height='2' rx='1'/%3E%3Crect x='50' y='8' width='80' height='2' rx='1' opacity='0.7'/%3E%3Crect x='140' y='8' width='30' height='2' rx='1' opacity='0.5'/%3E%3Crect x='180' y='8' width='120' height='2' rx='1' opacity='0.8'/%3E%3Crect x='310' y='8' width='60' height='2' rx='1' opacity='0.4'/%3E%3Crect x='10' y='20' width='60' height='2' rx='1' opacity='0.6'/%3E%3Crect x='80' y='20' width='40' height='2' rx='1' opacity='0.9'/%3E%3Crect x='130' y='20' width='150' height='2' rx='1' opacity='0.5'/%3E%3Crect x='290' y='20' width='80' height='2' rx='1' opacity='0.7'/%3E%3C/g%3E%3C/svg%3E");
+            background-size: 100% 100%, 500px 28px;
+        }
+
+        /* Git graph lines — github section */
+        #github {
+            background-color: var(--bg);
+            background-image:
+                radial-gradient(ellipse 500px 400px at 10% 40%, rgba(0, 255, 136, .04) 0%, transparent 100%),
+                radial-gradient(ellipse 400px 300px at 90% 70%, rgba(68, 170, 255, .025) 0%, transparent 100%),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300'%3E%3Cg stroke='%2300ff88' opacity='0.07' fill='none' stroke-width='1.5'%3E%3Cline x1='40' y1='0' x2='40' y2='300'/%3E%3Cline x1='80' y1='60' x2='80' y2='200'/%3E%3Cline x1='120' y1='100' x2='120' y2='240'/%3E%3Cpath d='M40 60 Q60 60 80 60'/%3E%3Cpath d='M40 100 Q80 100 120 100'/%3E%3Cpath d='M80 200 Q60 200 40 220'/%3E%3Cpath d='M120 240 Q80 240 40 260'/%3E%3C/g%3E%3Cg fill='%2300ff88' opacity='0.15'%3E%3Ccircle cx='40' cy='30' r='4'/%3E%3Ccircle cx='40' cy='60' r='4'/%3E%3Ccircle cx='80' cy='60' r='4'/%3E%3Ccircle cx='40' cy='100' r='4'/%3E%3Ccircle cx='120' cy='100' r='4'/%3E%3Ccircle cx='80' cy='140' r='4'/%3E%3Ccircle cx='40' cy='160' r='4'/%3E%3Ccircle cx='120' cy='180' r='4'/%3E%3Ccircle cx='80' cy='200' r='4'/%3E%3Ccircle cx='40' cy='220' r='4'/%3E%3Ccircle cx='120' cy='240' r='4'/%3E%3Ccircle cx='40' cy='260' r='4'/%3E%3Ccircle cx='40' cy='290' r='4'/%3E%3C/g%3E%3C/svg%3E");
+            background-size: 100% 100%, 100% 100%, 200px 300px;
+        }
+
+        /* ═══════════════════════════════════════════════
+           SECTION TRANSITION FADES — smooth blending
+           ═══════════════════════════════════════════════ */
+
+        /* Every section gets a top-fade from the previous section's bg */
+        .section-top-fade::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* section-alt sections → fade in FROM --bg (previous regular section) */
+        #profil::before,
+        #skills::before,
+        #infrastruktur::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(to bottom, var(--bg), transparent);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* regular sections after section-alt → fade in FROM --bg2 */
+        #match::before,
+        #motivation::before,
+        #github::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(to bottom, var(--bg2), transparent);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Bottom fade out for each section → blends into next */
+        #profil::after,
+        #skills::after,
+        #infrastruktur::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(to top, var(--bg), transparent);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #match::after,
+        #motivation::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(to top, var(--bg2), transparent);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+            position: relative;
+            z-index: 20;
+        }
+
+        .section-header::before {
+            content: '#';
+            font-size: 1.4rem;
+            color: var(--green);
+            font-weight: 800
+        }
+
+        .sh-text {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(1.4rem, 3vw, 2rem);
+            font-weight: 700;
+            color: #fff
+        }
+
+        .sh-text span {
+            color: var(--green)
+        }
+
+        .section-header::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--border), transparent);
+            margin-left: .5rem
+        }
+
+        /* TERMINAL */
+        .terminal {
+            background: #000;
+            border: 1px solid var(--border);
+            position: relative;
+            margin: 0 auto;
+            z-index: 20;
+        }
+
+        .term-bar {
+            background: #141a10;
+            border-bottom: 1px solid var(--border);
+            padding: .6rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem
+        }
+
+        .term-dots {
+            display: flex;
+            gap: .4rem
+        }
+
+        .term-dots span {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%
+        }
+
+        .term-title {
+            color: var(--text-dim);
+            font-size: 11px;
+            margin-left: .5rem;
+            letter-spacing: .08em
+        }
+
+        .term-body {
+            padding: 1.5rem;
+            font-size: 13px;
+            line-height: 1.9
+        }
+
+        .term-body .ps1c {
+            color: var(--green);
+            font-weight: 700
+        }
+
+        .term-body .cmdc {
+            color: var(--amber)
+        }
+
+        .term-body .comment {
+            color: var(--text-dim)
+        }
+
+        .term-body .keyc {
+            color: #44aaff
+        }
+
+        .term-body .valc {
+            color: #aa66ff
+        }
+
+        .term-body .ok-t {
+            color: #00ff88;
+            font-weight: 700
+        }
+
+        .term-body .wa-t {
+            color: var(--amber)
+        }
+
+        .term-body .sec-t {
+            color: var(--amber);
+            font-weight: 700;
+            margin-top: .5rem
+        }
+
+        .ln {
+            display: block
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 14px;
+            background: var(--green);
+            animation: blink 1s infinite;
+            vertical-align: text-bottom;
+            margin-left: 2px
+        }
+
+        /* SKILLS */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 1.5rem;
+            position: relative;
+            z-index: 20;
+        }
+
+        .skill-group {
+            border: 1px solid var(--border);
+            background: rgba(0, 255, 136, .01);
+            padding: 1.5rem;
+            position: relative
+        }
+
+        .skill-group::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--green);
+            opacity: .4
+        }
+
+        .sg-title {
+            color: var(--amber);
+            font-size: 11px;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem
+        }
+
+        .skill-item {
+            margin-bottom: 1rem
+        }
+
+        .skill-item:last-child {
+            margin-bottom: 0
+        }
+
+        .skill-hdr {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: .3rem
+        }
+
+        .skill-name {
+            color: var(--text);
+            font-size: 12px
+        }
+
+        .skill-pct {
+            color: var(--green-dim);
+            font-size: 11px
+        }
+
+        .skill-bar {
+            height: 4px;
+            background: var(--border);
+            position: relative;
+            overflow: hidden
+        }
+
+        .skill-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #00cc66, var(--green));
+            width: 0;
+            transition: width 1.2s cubic-bezier(.16, 1, .3, 1);
+            box-shadow: 0 0 10px rgba(0, 255, 136, .5)
+        }
+
+        .skill-ascii {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 2px
+        }
+
+        /* MATCH TABLE */
+        .match-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            position: relative;
+            z-index: 20;
+        }
+
+        .match-table th {
+            text-align: left;
+            color: var(--amber);
+            font-size: 10px;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border);
+            padding: .6rem 1rem .6rem 0
+        }
+
+        .match-table td {
+            padding: .8rem 1rem .8rem 0;
+            border-bottom: 1px solid rgba(26, 46, 32, .5);
+            vertical-align: top;
+            color: var(--text)
+        }
+
+        .match-table tr:last-child td {
+            border-bottom: none
+        }
+
+        .match-table td:first-child {
+            color: var(--text-dim);
+            width: 35%
+        }
+
+        .ms {
+            display: inline-block;
+            font-size: 10px;
+            padding: 1px 6px;
+            border: 1px solid;
+            letter-spacing: .1em;
+            margin-left: .5rem;
+            text-transform: uppercase
+        }
+
+        .s-y {
+            border-color: var(--green);
+            color: var(--green)
+        }
+
+        .s-p {
+            border-color: var(--amber);
+            color: var(--amber)
+        }
+
+        /* MOTIVATION */
+        .motive-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1rem;
+            position: relative;
+            z-index: 20;
+        }
+
+        .motive-card {
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            position: relative;
+            background: rgba(0, 0, 0, .3);
+            transition: all .25s
+        }
+
+        .motive-card:hover {
+            border-color: rgba(0, 255, 136, .3);
+            background: rgba(0, 255, 136, .03);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, .4)
+        }
+
+        .mc-num {
+            font-size: 3rem;
+            font-weight: 800;
+            color: rgba(0, 255, 136, .07);
+            position: absolute;
+            top: .5rem;
+            right: 1rem;
+            line-height: 1;
+            font-family: 'Syne', sans-serif
+        }
+
+        .mc-icon {
+            font-size: 1.4rem;
+            margin-bottom: .8rem
+        }
+
+        .mc-title {
+            color: #fff;
+            font-weight: 700;
+            font-size: .95rem;
+            margin-bottom: .5rem
+        }
+
+        .mc-text {
+            color: var(--text-dim);
+            font-size: 12px;
+            line-height: 1.7
+        }
+
+        /* TIMELINE */
+        .timeline {
+            position: relative;
+            padding-left: 2rem
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: linear-gradient(180deg, var(--green), transparent)
+        }
+
+        .tl-item {
+            position: relative;
+            margin-bottom: 2rem
+        }
+
+        .tl-dot {
+            position: absolute;
+            left: -2rem;
+            top: .15rem;
+            width: 10px;
+            height: 10px;
+            border: 2px solid var(--green);
+            background: var(--bg);
+            margin-left: -4px
+        }
+
+        .tl-dot.active {
+            background: var(--green);
+            box-shadow: 0 0 10px var(--green)
+        }
+
+        .tl-date {
+            color: var(--text-dim);
+            font-size: 11px;
+            letter-spacing: .1em;
+            margin-bottom: .3rem
+        }
+
+        .tl-title {
+            color: #fff;
+            font-weight: 700;
+            margin-bottom: .3rem
+        }
+
+        .tl-body {
+            color: var(--text-dim);
+            font-size: 12px
+        }
+
+        /* GITHUB */
+        .gh-panel {
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, .4);
+            padding: 2.5rem;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 2rem;
+            align-items: center;
+            position: relative;
+            z-index: 20;
+        }
+
+        .gh-panel h3 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.5rem;
+            color: #fff;
+            margin-bottom: .8rem
+        }
+
+        .gh-panel p {
+            color: var(--text-dim);
+            font-size: 13px;
+            margin-bottom: .5rem
+        }
+
+        /* FIX: only plain text links inside gh-panel get green, not buttons */
+        .gh-panel p a {
+            color: var(--green);
+            text-decoration: none
+        }
+
+        .gh-panel p a:hover {
+            text-decoration: underline
+        }
+
+        .repo-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+            margin-top: 1rem
+        }
+
+        .repo-pill {
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 11px;
+            padding: 3px 10px;
+            letter-spacing: .08em
+        }
+
+        .repo-pill span {
+            color: var(--green)
+        }
+
+        /* SCROLL TOP */
+        #stt {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            width: 40px;
+            height: 40px;
+            background: var(--green);
+            color: #000;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity .3s;
+            font-family: 'JetBrains Mono', monospace;
+            z-index: 500;
+        }
+
+        #stt.vis {
+            opacity: 1
+        }
+
+        #stt:hover {
+            background: #fff
+        }
+
+        /* FOOTER */
+        footer {
+            background: #000;
+            border-top: 1px solid var(--border);
+            padding: 2rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem
+        }
+
+        .fl {
+            color: var(--text-dim);
+            font-size: 12px
+        }
+
+        .fl span {
+            color: var(--green)
+        }
+
+        .fr {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap
+        }
+
+        .fr a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 12px;
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            transition: all .2s
+        }
+
+        .fr a:hover {
+            color: var(--green);
+            border-color: var(--green)
+        }
+
+        /* FADE IN */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity .6s ease, transform .6s ease;
+            position: relative;
+            z-index: 20;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: none
+        }
+
+        /* GLITCH */
+        .glitch-wrap {
+            position: relative;
+            display: inline-block
+        }
+
+        .glitch-wrap::before,
+        .glitch-wrap::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            font-family: 'Syne', sans-serif;
+            font-weight: 800
+        }
+
+        .glitch-wrap::before {
+            color: #ff4466;
+            animation: glitch 5s infinite linear alternate-reverse
+        }
+
+        .glitch-wrap::after {
+            color: #44aaff;
+            animation: glitch 5s infinite linear alternate-reverse;
+            animation-delay: .1s
+        }
+
+        /* ANIMATIONS */
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0
+            }
+        }
+
+        @keyframes floatUp {
+
+            0%,
+            100% {
+                transform: translateX(-50%) translateY(0);
+                opacity: .5
+            }
+
+            50% {
+                transform: translateX(-50%) translateY(-8px);
+                opacity: 1
+            }
+        }
+
+        @keyframes glitch {
+            0% {
+                clip-path: inset(40% 0 61% 0);
+                transform: translate(-2px, 0)
+            }
+
+            20% {
+                clip-path: inset(92% 0 1% 0);
+                transform: translate(2px, 0)
+            }
+
+            40% {
+                clip-path: inset(43% 0 1% 0);
+                transform: translate(-2px, 0)
+            }
+
+            60% {
+                clip-path: inset(25% 0 58% 0);
+                transform: translate(0, 0)
+            }
+
+            80% {
+                clip-path: inset(54% 0 7% 0);
+                transform: translate(2px, 0)
+            }
+
+            100% {
+                clip-path: inset(58% 0 43% 0);
+                transform: translate(-2px, 0)
+            }
+        }
+
+        @media(max-width:768px) {
+            .tb-nav {
+                display: none
+            }
+
+            .hero {
+                padding: 5rem 1.5rem 3rem
+            }
+
+            .section {
+                padding: 3rem 1.5rem
+            }
+
+            .gh-panel {
+                grid-template-columns: 1fr
+            }
+
+            footer {
+                flex-direction: column;
+                text-align: center
+            }
+
+            .dot-nav {
+                display: none
+            }
+
+            #live-clock {
+                display: none
+            }
+
+            .infra-grid {
+                grid-template-columns: 1fr !important
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="boot">
+        <div id="boot-log"><span id="boot-cursor"></span></div>
+    </div>
+
+    <header class="topbar" id="topbar">
+        <div class="tb-left">
+            <div class="tb-dot d-r"></div>
+            <div class="tb-dot d-y"></div>
+            <div class="tb-dot d-g"></div>
+            <span class="tb-title">wm87@smi-ref17:<span>~</span>$</span>
+        </div>
+        <nav class="tb-nav">
+            <a href="#profil">profil</a>
+            <a href="#match">match</a>
+            <a href="#skills">skills</a>
+            <a href="#motivation">motivation</a>
+            <a href="#infrastruktur">infrastruktur</a>
+            <a href="#github">github</a>
+        </nav>
+        <div id="live-clock">
+            <span>SYS:</span><span class="cv" id="clk">--:--:--</span>
+            <span>HOST:</span><span class="cv">smi-ref17-node01</span>
+        </div>
+    </header>
+
+    <nav class="dot-nav" id="dotNav"></nav>
+
+    <!-- HERO -->
+    <section class="hero" id="hero">
+        <div class="hero-inner">
+            <div class="hero-prompt">
+                <span class="ps1">wm87@localhost:~$</span>
+                <span class="cmd">./bewerbung.sh --stelle="IT-Systemadmin Linux/Container" --ref=17 --haus=SMI</span>
+            </div>
+            <h1 class="hero-title">
+                <span class="glitch-wrap" data-text="Linux &amp;">Linux &amp;</span><br>
+                <span class="hl">Container</span><br>
+                <span style="color:var(--text)">Administration</span>
+            </h1>
+            <div class="hero-subtitle">
+                <strong style="color:#fff">Matthias W.</strong> &mdash; Bewerbung f&uuml;r das S&auml;chsische
+                Staatsministerium des Innern &middot; Referat 17<br>
+                <span class="tag">geoinformatik htwdd</span>
+                <span class="tag">ihk fachinformatiker</span>
+                <span class="tag">linux</span>
+                <span class="tag">container</span>
+                <span class="tag">automation</span>
+            </div>
+            <div class="hero-stats">
+                <div class="stat-box">
+                    <div class="stat-value">2</div>
+                    <div class="stat-label">Abschlüsse</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">5+</div>
+                    <div class="stat-label">Jahre IT-Erfahrung</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">100%</div>
+                    <div class="stat-label">Motivation</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">&infin;</div>
+                    <div class="stat-label">Lernbereitschaft</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">50+</div>
+                    <div class="stat-label">Git-Repos</div>
+                </div>
+            </div>
+            <div class="hero-cta">
+                <a href="#match" class="btn btn-primary">match --check-requirements</a>
+                <a href="https://github.com/wm87" target="_blank" class="btn btn-secondary">cat ~/github.md</a>
+            </div>
+        </div>
+        <!-- Smooth transition from hero into profil section -->
+        <div class="hero-fade"></div>
+        <div class="scroll-hint">&#8595; SCROLL</div>
+    </section>
+
+    <!-- WHOAMI -->
+    <section class="section section-alt" id="profil">
+        <div class="section-header">
+            <div class="sh-text">whoami <span>--verbose</span></div>
+        </div>
+        <div class="terminal fade-in">
+            <div class="term-bar">
+                <div class="term-dots"><span class="d-r"></span><span class="d-y"></span><span class="d-g"></span></div>
+                <span class="term-title">bash &mdash; 80x24</span>
+            </div>
+            <div class="term-body">
+                <span class="ln"><span class="ps1c">wm87@localhost:~$</span> <span class="cmdc">cat
+                        /etc/profile.d/bewerbung.conf</span></span>
+                <span class="ln comment"># ─────────────────────────────────────────────</span>
+                <span class="ln comment"># Bewerbungsprofil &ndash; Matthias W. | wm87 | 2026</span>
+                <span class="ln comment"># ─────────────────────────────────────────────</span>
+                <span class="ln">&nbsp;</span>
+                <span class="ln"><span class="keyc">NAME</span>=<span class="valc">"Matthias W."</span></span>
+                <span class="ln"><span class="keyc">ROLE</span>=<span class="valc">"IT-Systemadministrator
+                        Linux/Container"</span></span>
+                <span class="ln"><span class="keyc">TARGET</span>=<span class="valc">"SMI Referat 17 &ndash;
+                        Dresden"</span></span>
+                <span class="ln"><span class="keyc">CONTRACT</span>=<span class="valc">"Unbefristet |
+                        Vollzeit"</span></span>
+                <span class="ln">&nbsp;</span>
+                <span class="ln"><span class="keyc">EDUCATION</span>=<span class="valc">(</span></span>
+                <span class="ln">&nbsp; <span class="valc">"M.Eng. Geoinformatik &ndash; HTW Dresden"</span></span>
+                <span class="ln">&nbsp; <span class="valc">"IHK Fachinformatiker Anwendungsentwicklung"</span></span>
+                <span class="ln"><span class="valc">)</span></span>
+                <span class="ln">&nbsp;</span>
+                <span class="ln"><span class="keyc">CORE_SKILLS</span>=<span class="valc">(</span></span>
+                <span class="ln">&nbsp; <span class="valc">"Linux: Debian &middot; Ubuntu (t&auml;glich
+                        produktiv)"</span></span>
+                <span class="ln">&nbsp; <span class="valc">"Container: Docker"</span></span>
+                <span class="ln">&nbsp; <span class="valc">"Automation: Bash &middot; Python;
+                        Ansible"</span></span>
+                <span class="ln">&nbsp; <span class="valc">"Virt: VMware vSphere (Grundlagen)"</span></span>
+                <span class="ln">&nbsp; <span class="valc">"VCS: Git &middot; GitLab &middot;"</span></span>
+                <span class="ln">&nbsp; <span class="valc">"Docs: Confluence &middot; MediaWiki"</span></span>
+                <span class="ln"><span class="valc">)</span></span>
+                <span class="ln">&nbsp;</span>
+                <span class="ln"><span class="keyc">SECURITY_CHECK</span>=<span class="valc">"S&Uuml;2 &ndash;
+                        bereit"</span></span>
+                <span class="ln"><span class="keyc">GERMAN</span>=<span class="valc">"Muttersprachler"</span></span>
+                <span class="ln"><span class="keyc">STATUS</span>=<span class="valc">"verf&uuml;gbar"</span></span>
+                <span class="ln">&nbsp;</span>
+                <span class="ln"><span class="ps1c">wm87@localhost:~$</span> <span class="cmdc">systemctl status
+                        bewerbung.service</span></span>
+                <span class="ln"><span class="ok-t">&bull;</span> bewerbung.service &ndash; IT-Systemadmin Bewerbung
+                    SMI</span>
+                <span class="ln">&nbsp;&nbsp;&nbsp;&nbsp; Active: <span class="ok-t">active (running)</span> since
+                    2026-03-04 08:00:00 CET</span>
+                <span class="ln">&nbsp;&nbsp;&nbsp;&nbsp;Loaded: Motivation <span class="ok-t">HOCH</span> &ndash;
+                    Gemeinwohl, Technik, Team</span>
+                <span class="ln">&nbsp;&nbsp;&nbsp;MainPID: 1337 (matthias.w)</span>
+                <span class="ln"><span class="cursor"></span></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- MATCH -->
+    <section class="section" id="match">
+        <div class="section-header">
+            <div class="sh-text">diff <span>requirements.txt bewerberprofil.txt</span></div>
+        </div>
+        <div class="fade-in">
+            <table class="match-table">
+                <thead>
+                    <tr>
+                        <th>Anforderung (Stelle)</th>
+                        <th>Meine Qualifikation</th>
+                        <th style="width:90px">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Bachelor/Diplom Informatik<br><em>oder</em> IHK IT + 5 J. Erfahrung</td>
+                        <td><span style="color:var(--green)">&#10004;</span> M.Eng. Geoinformatik (HTW Dresden) + IHK
+                            Fachinformatiker &mdash; starke IT-Basis</td>
+                        <td><span class="ms s-y">JA</span></td>
+                    </tr>
+                    <tr>
+                        <td>Linux-Administration<br>(RHEL, Ubuntu) &ndash; fundiert</td>
+                        <td><span style="color:var(--green)">&#10004;</span> Debian/Ubuntu produktiv. RHEL: kein
+                            Vorwissen &ndash; alle Linux-Konzepte &uuml;bertragbar, Lernkurve kurz.</td>
+                        <td><span class="ms s-p">RHEL NEU</span></td>
+                    </tr>
+                    <tr>
+                        <td>Container-Plattformen<br>(Docker, Podman, LXC)</td>
+                        <td><span style="color:var(--green)">&#10004;</span> Docker produktiv. Podman, LXC: kein
+                            Vorwissen &ndash; einarbeitbar.</td>
+                        <td><span class="ms s-y">DOCKER JA</span><span class="ms s-p">Podman NEU</span><span
+                                class="ms s-p">LXC NEU</span></td>
+                    </tr>
+                    <tr>
+                        <td>VMware vSphere (von Vorteil)</td>
+                        <td><span style="color:var(--green)">&#10004;</span> VMware vSphere aktiv eingesetzt: VMs,
+                            vCenter, Snapshots, Ressourcenmanagement</td>
+                        <td><span class="ms s-y">JA</span></td>
+                    </tr>
+                    <tr>
+                        <td>Interesse Infra-Aufbau<br>&amp; RZ-Migration</td>
+                        <td><span style="color:var(--green)">&#10004;</span> Genau mein Metier: Systeme konzipieren,
+                            migrieren, dokumentieren</td>
+                        <td><span class="ms s-y">JA</span></td>
+                    </tr>
+                    <tr>
+                        <td>Digitalisierung &amp; KI<br>(w&uuml;nschenswert)</td>
+                        <td><span style="color:var(--green)">&#10004;</span> Selbststudium: LLMs, intensive Nutzung für
+                            EW-Aufgaben</td>
+                        <td><span class="ms s-y">JA</span></td>
+                    </tr>
+                    <tr>
+                        <td>Bereitschaft S&Uuml; 2</td>
+                        <td><span style="color:var(--green)">&#10004;</span> Vollst&auml;ndig bereit &ndash; keine
+                            Einw&auml;nde</td>
+                        <td><span class="ms s-y">JA</span></td>
+                    </tr>
+                    <tr>
+                        <td>Deutschkenntnisse C2</td>
+                        <td><span style="color:var(--green)">&#10004;</span> Muttersprachler &ndash; Dokumentation,
+                            Kommunikation, Pr&auml;sentationen</td>
+                        <td><span class="ms s-y">JA</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="margin-top:1.5rem">
+                <div class="terminal" style="max-width:520px">
+                    <div class="term-bar">
+                        <div class="term-dots"><span class="d-r"></span><span class="d-y"></span><span
+                                class="d-g"></span></div>
+                        <span class="term-title">match-score</span>
+                    </div>
+                    <div class="term-body">
+                        <span class="ln"><span class="ps1c">$</span> <span class="cmdc">bewerbung-check
+                                --score</span></span>
+                        <span class="ln">&nbsp;</span>
+                        <span class="ln">&nbsp; Pflichtanforderungen&nbsp; <span class="ok-t">[##########]
+                                70%</span>&nbsp; PASS</span>
+                        <span class="ln">&nbsp; Fachkenntnisse&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span
+                                class="ok-t">[#########.] &nbsp;80%</span>&nbsp; PASS</span>
+                        <span class="ln">&nbsp; W&uuml;nschenswert&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span
+                                class="ok-t">[########..] &nbsp;70%</span>&nbsp; PASS</span>
+                        <span class="ln">&nbsp; Soft Skills&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span
+                                class="ok-t">[##########] 100%</span>&nbsp; PASS</span>
+                        <span class="ln">&nbsp;</span>
+                        <span class="ln">&nbsp;
+                            &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</span>
+                        <span class="ln">&nbsp; Gesamtscore: <span class="ok-t">80/100</span> &rarr; EMPFEHLUNG:
+                            EINLADEN</span>
+                        <span class="ln"><span class="cursor"></span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SKILLS -->
+    <section class="section section-alt" id="skills">
+        <div class="section-header">
+            <div class="sh-text">apt list <span>--installed --skill-level</span></div>
+        </div>
+        <div class="skills-grid fade-in">
+
+            <div class="skill-group">
+                <div class="sg-title">&#9658; Linux &amp; System</div>
+                <div class="skill-item">
+                    <div class="skill-hdr"><span class="skill-name">Debian / Ubuntu</span><span
+                            class="skill-pct">88%</span></div>
+                    <div class="skill-bar">
+                        <div class="skill-fill" data-w="88"></div>
+                    </div>
+                    <div class="skill-ascii">[########..] t&auml;glich produktiv</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-hdr"><span class="skill-name">RHEL / CentOS Stream</span><span class="skill-pct"
+                            style="color:var(--amber)">neu</span></div>
+                    <div class="skill-bar">
+                        <div class="skill-fill" data-w="0"></div>
+                    </div>
+                    <div class="skill-ascii" style="color:var(--amber)">[..........] kein Vorwissen &ndash; Konzepte
+                        übertragbar</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-hdr"><span class="skill-name">Systemd / Services</span><span
+                            class="skill-pct">82%</span></div>
+                    <div class="skill-bar">
+                        <div class="skill-fill" data-w="82"></div>
+                    </div>
+                    <div class="skill-ascii">[########..] Unit-Files, Journald, Targets</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-hdr"><span class="skill-name">Netzwerk (TCP/IP, iptables)</span><span
+                            class="skill-pct">45%</span></div>
+                    <div class="skill-bar">
+                        <div class="skill-fill" data-w="45"></div>
+                    </div>
+                    <div class="skill-ascii">[####......] Grundlagen ok &ndash; mittelmäßig, ausbaufähig</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-hdr"><span class="skill-name">Security Hardening</span><span
+                            class="skill-pct">30%</span></div>
+                    <div class="skill-bar">
+                        <div class="skill-fill" data-w="30"></div>
+                    </div>
+                    <div class="skill-ascii" style="color:var(--amber)">[###.......] stark ausbaufähig &ndash;
+                        lernwillig</div>
+                </div>
+            </div>
+
+            <div class="skill-group">
+                <div class="sg-title">&#9658; Container &amp; Orchestrierung</div>
+                <div class="skill-item">
+                    <div class="skill-hdr"><span class="skill-name">Docker / Docker Compose</span><span
+                            class="skill-pct">90%</span></div>
+                    <div class="skill-bar">
+                        <div class="skill-fill" data-w="90"></div>
+                    </div>
+                    <div class="skill-ascii">[#########.] Images, Netzwerk, Volumes, CI</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-hdr"><span class="skill-name">Podman / Rootless</span><span class="skill-pct"
+                            style="color:var(--amber)">neu</span></div>
+                    <div class="skill-bar">
+                        <div class="skill-fill" data-w="0"></div>
+                    </div>
+                    <div class="skill-ascii" style="color:var(--amber)">[..........] kein Vorwissen &ndash; einarbeitbar
+                    </div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-hdr"><span class="skill-name">LXC / LXD</span><span class="skill-pct"
+                            style="color:var(--amber)">neu</span></div>
+                    <div class="skill-bar">
+                        <div class="skill-fill" data-w="0"></div>
+                    </div>
+                    <div class="skill-ascii" style="color:var(--amber)">[..........] kein Vorwissen &ndash; einarbeitbar
+                    </div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-hdr"><span class="skill-name">Kubernetes (k3s / k8s)</span><span class="skill-pct"
+                            style="color:var(--amber)">neu</span></div>
+                    <div class="skill-bar">
+                        <div class="skill-fill" data-w="0"></div>
+                    </div>
+                    <div class="skill-ascii" style="color:var(--amber)">[..........] kein Vorwissen &ndash; einarbeitbar
+                    </div>
+                </div>
+            </div>
+
+            <div class="skill-group">
+                <div class="sg-title">&#9658; Automatisierung &amp; IaC</div>
+                <div class="skill-item">
+                    <div class="skill-hdr"><span class="skill-name">Bash Scripting</span><span
+                            class="skill-pct">85%</span></div>
+                    <div class="skill-bar">
+                        <div class="skill-fill" data-w="85"></div>
+                    </div>
+                    <div class="skill-ascii">[########..] Deployment, Monitoring, Backup</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-hdr"><span class="skill-name">Python</span><span class="skill-pct">80%</span>
+                    </div>
+                    <div class="skill-bar">
+                        <div class="skill-fill" data-w="80"></div>
+                    </div>
+                    <div class="skill-ascii">[########..] Fortgeschrittene Praxis</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-hdr"><span class="skill-name">Ansible</span><span class="skill-pct">62%</span>
+                    </div>
+                    <div class="skill-bar">
+                        <div class="skill-fill" data-w="62"></div>
+                    </div>
+                    <div class="skill-ascii">[######....] Playbooks, Roles, Inventories</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-hdr"><span class="skill-name">Git / GitLab</span><span
+                            class="skill-pct">80%</span></div>
+                    <div class="skill-bar">
+                        <div class="skill-fill" data-w="80"></div>
+                    </div>
+                    <div class="skill-ascii">[########..] Branching, Reviews &ndash; kein CI/CD-Wissen</div>
+                </div>
+            </div>
+
+            <div class="skill-group">
+                <div class="sg-title">&#9658; Virtualisierung &amp; Monitoring</div>
+                <div class="skill-item">
+                    <div class="skill-hdr"><span class="skill-name">VMware vSphere / ESXi</span><span
+                            class="skill-pct">70%</span></div>
+                    <div class="skill-bar">
+                        <div class="skill-fill" data-w="70"></div>
+                    </div>
+                    <div class="skill-ascii">[#######...] VMs, Snapshots, vCenter, Ressourcen</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-hdr"><span class="skill-name">Prometheus / Grafana</span><span
+                            class="skill-pct">55%</span></div>
+                    <div class="skill-bar">
+                        <div class="skill-fill" data-w="55"></div>
+                    </div>
+                    <div class="skill-ascii">[#####.....] Metrics, Dashboards, Alerts</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-hdr"><span class="skill-name">Confluence / MediaWiki</span><span
+                            class="skill-pct">88%</span></div>
+                    <div class="skill-bar">
+                        <div class="skill-fill" data-w="88"></div>
+                    </div>
+                    <div class="skill-ascii">[########..] Betriebsdok., Runbooks, KB</div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- MOTIVATION -->
+    <section class="section" id="motivation">
+        <div class="section-header">
+            <div class="sh-text">cat <span>motivation.txt</span></div>
+        </div>
+        <div class="motive-grid fade-in">
+            <div class="motive-card">
+                <div class="mc-num">01</div>
+                <div class="mc-icon">&#127963;&#65039;</div>
+                <div class="mc-title">Verantwortung f&uuml;r das Gemeinwohl</div>
+                <div class="mc-text">IT-Infrastruktur, die Polizei, Bev&ouml;lkerungsschutz und Verwaltung tr&auml;gt
+                    &ndash; jede Uptime-Stunde macht einen echten Unterschied f&uuml;r B&uuml;rgerinnen und B&uuml;rger.
+                </div>
+            </div>
+            <div class="motive-card">
+                <div class="mc-num">02</div>
+                <div class="mc-icon">&#127867;</div>
+                <div class="mc-title">Greenfield Linux-Infrastruktur</div>
+                <div class="mc-text">Eine neue Container-Plattform von Grund auf aufzubauen &ndash; kein Legacy-Mist,
+                    echte Architekturarbeit mit modernen Container-Technologien.</div>
+            </div>
+            <div class="motive-card">
+                <div class="mc-num">03</div>
+                <div class="mc-icon">&#128230;</div>
+                <div class="mc-title">Container als Basis f&uuml;r KI &amp; Digi</div>
+                <div class="mc-text">Fundament f&uuml;r KI-Piloten (Dokumentenanalyse, Chatbots) und
+                    Digitalisierungsprojekte &ndash; genau die Schnittmenge, die mich fachlich begeistert.</div>
+            </div>
+            <div class="motive-card">
+                <div class="mc-num">04</div>
+                <div class="mc-icon">&#127959;&#65039;</div>
+                <div class="mc-title">Zwei neue Rechenzentren</div>
+                <div class="mc-text">Migrations-Projekte dieser Gr&ouml;&szlig;enordnung mit vSphere und strukturiertem
+                    Rollout &ndash; eine einmalige Gelegenheit zur professionellen Entwicklung.</div>
+            </div>
+            <div class="motive-card">
+                <div class="mc-num">05</div>
+                <div class="mc-icon">&#128275;</div>
+                <div class="mc-title">Open-Source-Strategie Sachsens</div>
+                <div class="mc-text">Den Umstieg auf Linux und Open-Source-L&ouml;sungen im Freistaat will ich nicht nur
+                    begleiten, sondern aktiv vorantreiben. Das ist meine &Uuml;berzeugung.</div>
+            </div>
+            <div class="motive-card">
+                <div class="mc-num">06</div>
+                <div class="mc-icon">&#129309;</div>
+                <div class="mc-title">Team, Einarbeitung &amp; Entwicklung</div>
+                <div class="mc-text">Strukturierter Onboarding-Plan, Fortbildungen, engagiertes Team &ndash; der Rahmen,
+                    in dem ich langfristig Spitzenleistung bringen kann.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- INFRASTRUKTUR -->
+    <section class="section section-alt" id="infrastruktur">
+        <div class="section-header">
+            <div class="sh-text">journalctl <span>--unit=smi-infrastruktur</span></div>
+        </div>
+        <div class="infra-grid fade-in"
+            style="display:grid;grid-template-columns:1fr 1fr;gap:3rem;position:relative;z-index:20">
+
+            <div>
+                <div
+                    style="color:var(--amber);font-size:11px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:1.5rem">
+                    &#9658; SMI IT-Roadmap &ndash; meine Rolle</div>
+                <div class="timeline">
+                    <div class="tl-item">
+                        <div class="tl-dot active"></div>
+                        <div class="tl-date">JETZT &middot; 2026</div>
+                        <div class="tl-title" style="color:var(--green)">Einarbeitung &amp; Betrieb</div>
+                        <div class="tl-body">Linux-Server, IT-Support SMI, Schnittstelle zum SID &ndash; strukturierter
+                            Einstieg mit Team-Support.</div>
+                    </div>
+                    <div class="tl-item">
+                        <div class="tl-dot"></div>
+                        <div class="tl-date">2026&ndash;2027</div>
+                        <div class="tl-title">Container-Plattform Aufbau</div>
+                        <div class="tl-body">Design, Implementierung und Rollout der Container-Infrastruktur f&uuml;r
+                            den gesamten Gesch&auml;ftsbereich SMI.</div>
+                    </div>
+                    <div class="tl-item">
+                        <div class="tl-dot"></div>
+                        <div class="tl-date">2027&ndash;2028</div>
+                        <div class="tl-title">RZ-Migration vSphere</div>
+                        <div class="tl-body">Migration der virtualisierten Systeme in zwei neue
+                            Hochverf&uuml;gbarkeits-Rechenzentren &ndash; koordiniert mit SID.</div>
+                    </div>
+                    <div class="tl-item">
+                        <div class="tl-dot"></div>
+                        <div class="tl-date">2028+</div>
+                        <div class="tl-title">KI &amp; Digitalisierung</div>
+                        <div class="tl-body">Container-Plattform als Basis f&uuml;r KI-Pilotprojekte (Dokumentenanalyse,
+                            NLP-Services, interne Chatbots).</div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div
+                    style="color:var(--amber);font-size:11px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:1.5rem">
+                    &#9658; Technologie-Stack SMI &middot; meine Abdeckung</div>
+                <div class="terminal">
+                    <div class="term-bar">
+                        <div class="term-dots"><span class="d-r"></span><span class="d-y"></span><span
+                                class="d-g"></span></div>
+                        <span class="term-title">stack-audit</span>
+                    </div>
+                    <div class="term-body" style="font-size:12px">
+                        <span class="ln"><span class="ps1c">$</span> <span class="cmdc">stack-audit
+                                --scope=smi-ref17</span></span>
+                        <span class="ln">&nbsp;</span>
+                        <span class="ln"><span class="sec-t">[ BETRIEBSSYSTEME ]</span></span>
+                        <span class="ln">&nbsp; RHEL 9&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span
+                                class="wa-t">&#9685; neu &ndash; einarbeitbar</span></span>
+                        <span class="ln">&nbsp; Ubuntu Server&nbsp;&nbsp; <span class="ok-t">&#10004;
+                                produktiv</span></span>
+                        <span class="ln">&nbsp;</span>
+                        <span class="ln"><span class="sec-t">[ CONTAINER ]</span></span>
+                        <span class="ln">&nbsp; Docker&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span
+                                class="ok-t">&#10004; produktiv</span></span>
+                        <span class="ln">&nbsp; Podman&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span
+                                class="wa-t">&#9685; neu &ndash; einarbeitbar</span></span>
+                        <span class="ln">&nbsp; LXC/LXD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span
+                                class="wa-t">&#9685; neu &ndash; einarbeitbar</span></span>
+                        <span class="ln">&nbsp;</span>
+                        <span class="ln"><span class="sec-t">[ VIRTUALISIERUNG ]</span></span>
+                        <span class="ln">&nbsp; VMware vSphere&nbsp; <span class="wa-t">&#9685; Grundl. &ndash;
+                                vertiefbar</span></span>
+                        <span class="ln">&nbsp;</span>
+                        <span class="ln"><span class="sec-t">[ AUTOMATISIERUNG ]</span></span>
+                        <span class="ln">&nbsp; Bash&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                            <span class="ok-t">&#10004; produktiv</span></span>
+                        <span class="ln">&nbsp; Ansible&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span
+                                class="ok-t">&#10004; Playbooks ok</span></span>
+                        <span class="ln">&nbsp; Python&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span
+                                class="ok-t">&#10004; fortgeschritten</span></span>
+                        <span class="ln">&nbsp;</span>
+                        <span class="ln"><span class="sec-t">[ MONITORING ]</span></span>
+                        <span class="ln">&nbsp; Prometheus&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="ok-t">&#10004;
+                                Grundl. ok</span></span>
+                        <span class="ln">&nbsp; Grafana&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span
+                                class="ok-t">&#10004; Dashboards aktiv</span></span>
+                        <span class="ln"><span class="cursor"></span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- GITHUB -->
+    <section class="section" id="github">
+        <div class="section-header">
+            <div class="sh-text">git log <span>--online --all origin/wm87</span></div>
+        </div>
+        <div class="gh-panel fade-in">
+            <div>
+                <h3>github.com/wm87 &ndash; Transparente Arbeitsproben</h3>
+                <p>Meine GitHub-Repositories dokumentieren reale Projekte aus Linux-Administration,
+                    Container-Infrastruktur, Automatisierung und Webentwicklung. Strukturierte Dokumentation,
+                    nachvollziehbare Commit-Historien.</p>
+                <p>&#8594; <a href="https://github.com/wm87?tab=repositories"
+                        target="_blank">github.com/wm87?tab=repositories</a></p>
+                <div class="repo-pills">
+                    <div class="repo-pill">&#127867; <span>linux-hardening</span></div>
+                    <div class="repo-pill">&#128230; <span>docker-compose-stacks</span></div>
+                    <div class="repo-pill">&#9881; <span>ansible-playbooks</span></div>
+                    <div class="repo-pill">&#128013; <span>python-automation</span></div>
+                    <div class="repo-pill">&#128202; <span>monitoring-setups</span></div>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:1rem">
+                <a href="https://github.com/wm87" target="_blank" class="btn btn-primary">GitHub Profil</a>
+            </div>
+        </div>
+
+        <div class="terminal fade-in" style="margin-top:2rem">
+            <div class="term-bar">
+                <div class="term-dots"><span class="d-r"></span><span class="d-y"></span><span class="d-g"></span></div>
+                <span class="term-title">closing statement</span>
+            </div>
+            <div class="term-body">
+                <span class="ln"><span class="ps1c">wm87@smi-ref17:~$</span> <span class="cmdc">echo "Warum ich der
+                        Richtige bin"</span></span>
+                <span class="ln">&nbsp;</span>
+                <span class="ln">&nbsp; Ich bringe theoretische & technische Expertise mit &ndash;</span>
+                <span class="ln">&nbsp; dazu gehören <span class="ok-t">funktionierende Systeme</span>, <span
+                        class="ok-t">saubere Dokumentation</span></span>
+                <span class="ln">&nbsp; und die &Uuml;berzeugung, dass &ouml;ffentliche IT</span>
+                <span class="ln">&nbsp; genauso professionell betrieben werden sollte</span>
+                <span class="ln">&nbsp; wie in jedem Tech-Unternehmen.</span>
+                <span class="ln">&nbsp;</span>
+                <span class="ln">&nbsp; Referat 17 baut eine neue Container-Plattform auf.</span>
+                <span class="ln">&nbsp; <span class="wa-t">Das ist mein Spielfeld.</span></span>
+                <span class="ln">&nbsp; Ich kenne die Tools. Ich kenne den Weg.</span>
+                <span class="ln">&nbsp; Ich will Verantwortung &uuml;bernehmen &ndash;</span>
+                <span class="ln">&nbsp; f&uuml;r die Infrastruktur, f&uuml;r das Team, f&uuml;r Sachsen.</span>
+                <span class="ln">&nbsp;</span>
+                <span class="ln"><span class="ps1c">wm87@smi-ref17:~$</span> <span class="cmdc">exit 0</span>&nbsp;
+                    <span class="comment"># Bis zum Vorstellungsgespr&auml;ch.</span></span>
+                <span class="ln"><span class="cursor"></span></span>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="fl"><span>wm87 &middot; Matthias W.</span> &middot; IT-Systemadmin Linux/Container &middot; SMI
+            Referat 17 &middot; 2026<br><span style="color:var(--text-dim);font-size:11px">made with vim, caffeine &amp;
+                a strong opinion about systemd</span></div>
+        <div class="fr">
+            <a href="mailto:mwf102.mw@gmail.com" class="btn btn-secondary">mail</a>
+            <a href="https://github.com/wm87" target="_blank">&#8984; github</a>
+        </div>
+    </footer>
+
+    <button id="stt" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#8593;</button>
+
+    <script>
+        (function () {
+
+            /* BOOT – optimiert ohne nachträgliches Scrollen */
+            var bootLines = [
+                { t: 'dim', txt: 'BIOS v2.09 · SMI-NODE01 · 2026-03-04' },
+                { t: 'out', txt: 'Initializing kernel...' },
+                { t: 'ok', txt: '[  OK  ] Linux 6.7.0-smi-amd64 #1 SMP' },
+                { t: 'ok', txt: '[  OK  ] systemd 255 running' },
+                { t: 'ok', txt: '[  OK  ] Mounting filesystems... done' },
+                { t: 'ok', txt: '[  OK  ] Starting network interfaces... done' },
+                { t: 'ok', txt: '[  OK  ] Docker daemon started (containers: 14 running)' },
+                { t: 'ok', txt: '[  OK  ] Ansible inventory loaded (23 hosts)' },
+                { t: 'ok', txt: '[  OK  ] GitLab Runner registered' },
+                { t: 'ok', txt: '[  OK  ] Prometheus exporter :9100 up' },
+                { t: 'out', txt: 'Loading bewerbung.service...' },
+                { t: 'ok', txt: '[  OK  ] bewerbung.service – ACTIVE – Kandidat: Matthias W.' },
+                { t: 'dim', txt: 'Starting graphical target...' }
+            ];
+
+            var bootEl = document.getElementById('boot-log');
+            var bootCursor = document.getElementById('boot-cursor');
+            var bi = 0;
+            document.body.style.overflow = "hidden";
+            window.scrollTo({ top: 0, behavior: 'instant' });
+
+            function addBootLine() {
+                if (bi >= bootLines.length) {
+                    setTimeout(function () {
+                        // Letzte Chance: Seite ganz oben fixieren
+                        window.scrollTo({ top: 0, behavior: 'instant' });
+
+                        // Boot ausblenden
+                        document.getElementById('boot').classList.add('fade-out');
+                        document.getElementById('topbar').classList.add('show');
+
+                        setTimeout(function () {
+                            document.getElementById('boot').style.display = 'none';
+                            document.body.style.overflow = '';
+
+                            // Einmalig nach oben – instant
+                            window.scrollTo({ top: 0, behavior: 'instant' });
+
+                            startObserver();
+                            updateDotNav();
+
+                            // Smooth-Scrolling erst jetzt wieder aktivieren
+                            document.documentElement.style.scrollBehavior = 'smooth';
+                        }, 900);
+                    }, 400);
+                    return;
+                }
+                var l = bootLines[bi++];
+                var span = document.createElement('span');
+                span.style.display = 'block';
+                span.className = l.t === 'ok' ? 'ok' : l.t === 'err' ? 'err' : 'dim';
+                span.textContent = l.txt;
+                bootEl.insertBefore(span, bootCursor);
+                var delay = l.t === 'ok' ? 180 : 320;
+                setTimeout(addBootLine, delay);
+            }
+            setTimeout(addBootLine, 400);
+
+            /* CLOCK */
+            function updateClock() {
+                var el = document.getElementById('clk');
+                if (el) el.textContent = new Date().toLocaleTimeString('de-DE', { hour12: false });
+            }
+            setInterval(updateClock, 1000);
+            updateClock();
+
+            /* SCROLL TOP */
+            window.addEventListener('scroll', function () {
+                document.getElementById('stt').classList.toggle('vis', window.scrollY > 400);
+            }, { passive: true });
+
+            /* DOT NAV */
+            var navSections = [
+                { id: 'hero', label: '~/init' },
+                { id: 'profil', label: 'whoami' },
+                { id: 'match', label: 'diff' },
+                { id: 'skills', label: 'apt list' },
+                { id: 'motivation', label: 'cat motivation' },
+                { id: 'infrastruktur', label: 'journalctl' },
+                { id: 'github', label: 'git log' }
+            ];
+
+            var dotNav = document.getElementById('dotNav');
+            navSections.forEach(function (s, i) {
+                if (i > 0) {
+                    var conn = document.createElement('div');
+                    conn.className = 'dn-connector';
+                    dotNav.appendChild(conn);
+                }
+                var item = document.createElement('div');
+                item.className = 'dn-item';
+                item.id = 'dn-' + s.id;
+                item.innerHTML = '<span class="dn-label">' + s.label + '</span><div class="dn-dot"></div>';
+                item.addEventListener('click', function () {
+                    var target = document.getElementById(s.id);
+                    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+                dotNav.appendChild(item);
+            });
+
+            function updateDotNav() {
+                var mid = window.scrollY + window.innerHeight * 0.4;
+                var active = navSections[0].id;
+                navSections.forEach(function (s) {
+                    var el = document.getElementById(s.id);
+                    if (el && el.offsetTop <= mid) active = s.id;
+                });
+                navSections.forEach(function (s) {
+                    var item = document.getElementById('dn-' + s.id);
+                    if (item) item.classList.toggle('active', s.id === active);
+                });
+            }
+            window.addEventListener('scroll', updateDotNav, { passive: true });
+
+            /* INTERSECTION OBSERVER */
+            function startObserver() {
+                var obs = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (e) {
+                        if (e.isIntersecting) {
+                            e.target.classList.add('visible');
+                            e.target.querySelectorAll('.skill-fill').forEach(function (bar) {
+                                var w = bar.getAttribute('data-w');
+                                if (w) setTimeout(function () { bar.style.width = w + '%'; }, 100);
+                            });
+                            obs.unobserve(e.target);
+                        }
+                    });
+                }, { threshold: 0.1 });
+                document.querySelectorAll('.fade-in').forEach(function (el) { obs.observe(el); });
+            }
+
+        })();
+    </script>
+</body>
+
+</html>
